@@ -8,7 +8,7 @@ import feedparser
 from gtts import gTTS
 import requests
 import xml.sax.saxutils as sx
-import time
+import time, random
 
 RSS_URLS = [
     "https://www.francetvinfo.fr/titres.rss",
@@ -29,7 +29,7 @@ def clean_html(s: str) -> str:
     s = re.sub(r"\s+", " ", s).strip()
     return s
 
-def fetch_items(max_per_feed=5):
+def fetch_items(max_per_feed=2):
     items = []
     for url in RSS_URLS:
         try:
@@ -38,7 +38,7 @@ def fetch_items(max_per_feed=5):
                 title = clean_html(e.get("title",""))
                 summary = clean_html(e.get("summary","") or e.get("description",""))
                 if title:
-                    items.append((title, summary[:240]))
+                    items.append((title, summary[:160]))
         except Exception as ex:
             print(f"[WARN] Flux en erreur {url}: {ex}", file=sys.stderr)
     return items
@@ -59,10 +59,6 @@ Brèves :
 """
 
 def call_openai_chat(prompt: str) -> str:
-    """
-    Appel HTTP à l'API OpenAI avec retries si 429/5xx.
-    Nécessite OPENAI_API_KEY dans l'environnement.
-    """
     api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
         raise RuntimeError("OPENAI_API_KEY manquante")
@@ -78,39 +74,35 @@ def call_openai_chat(prompt: str) -> str:
             {"role": "system", "content": "Tu es un journaliste factuel et concis."},
             {"role": "user", "content": prompt},
         ],
-        "temperature": 0.4,
-        "max_tokens": 700  # un peu plus bas pour limiter la charge
+        "temperature": 0.3,
+        "max_tokens": 600
     }
 
-    # Retries exponentiels : 1s, 2s, 4s, 8s, 16s
-    backoff = 1
+    # Backoff progressif: 5s,10s,20s,40s,60s,60s,60s
+    delays = [5, 10, 20, 40, 60, 60, 60]
     last_err = None
-    for attempt in range(5):
+    for i, base in enumerate(delays, start=1):
         try:
-            r = requests.post(url, headers=headers, data=json.dumps(payload), timeout=60)
+            r = requests.post(url, headers=headers, data=json.dumps(payload), timeout=90)
             if r.status_code == 429:
-                # respecte "Retry-After" si présent
                 retry_after = r.headers.get("Retry-After")
-                wait = int(retry_after) if retry_after and retry_after.isdigit() else backoff
-                print(f"[WARN] 429 rate limit — attente {wait}s puis retry ({attempt+1}/5)")
+                wait = float(retry_after) if retry_after else base
+                wait += random.uniform(0, 2)  # petit jitter
+                print(f"[WARN] 429 rate limit — attente {wait:.1f}s puis retry ({i}/{len(delays)})")
                 time.sleep(wait)
-                backoff *= 2
                 continue
             r.raise_for_status()
             data = r.json()
             return data["choices"][0]["message"]["content"]
         except requests.RequestException as e:
             last_err = e
-            # Pour erreurs réseau/5xx, on retente aussi
             status = getattr(e.response, "status_code", None)
             if status and 500 <= status < 600:
-                print(f"[WARN] {status} serveur — attente {backoff}s puis retry ({attempt+1}/5)")
-                time.sleep(backoff)
-                backoff *= 2
+                wait = base + random.uniform(0, 2)
+                print(f"[WARN] {status} serveur — attente {wait:.1f}s puis retry ({i}/{len(delays)})")
+                time.sleep(wait)
                 continue
-            # autres erreurs : on casse
             break
-    # Après 5 essais, on remonte l’erreur → le script passera en fallback titres
     raise RuntimeError(f"Echec appel OpenAI après retries: {last_err}")
 
 
