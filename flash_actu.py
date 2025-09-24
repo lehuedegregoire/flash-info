@@ -97,7 +97,7 @@ def script_to_mp3(script_text: str, mp3_path: str):
 
 def update_podcast_feed(mp3_path: str, title: str, site_base_url: str, feed_path: str):
     os.makedirs(os.path.dirname(feed_path), exist_ok=True)
-    item_url = f"{site_base_url}/{mp3_path.replace('\\', '/')}"
+    item_url = site_base_url + "/" + mp3_path.replace("\\", "/")
     pubdate = now_paris().strftime("%a, %d %b %Y %H:%M:%S %z")
     items_xml = []
     if os.path.exists(feed_path):
