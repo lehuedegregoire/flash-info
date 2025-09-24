@@ -25,12 +25,33 @@ jobs:
       - name: Install deps
         run: pip install -r requirements.txt
 
-      - name: Run script
+       - name: Run script (try 1)
+        id: run1
+        continue-on-error: true
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: python flash_actu.py
+
+      - name: Wait before retry
+        if: steps.run1.outcome == 'failure'
+        run: sleep 75
+
+      - name: Run script (try 2)
+        if: steps.run1.outcome == 'failure'
+        id: run2
+        continue-on-error: true
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: python flash_actu.py
+
+      - name: Fail if both attempts failed
+        if: steps.run1.outcome == 'failure' && steps.run2.outcome == 'failure'
+        run: |
+          echo "Both attempts failed"; exit 1
 
       - name: Commit and push
         run: |
