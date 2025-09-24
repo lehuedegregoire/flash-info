@@ -1,0 +1,4 @@
+feedparser
+openai
+gTTS
+python-dateutil
