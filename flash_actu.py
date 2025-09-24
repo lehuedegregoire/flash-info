@@ -8,6 +8,7 @@ import feedparser
 from gtts import gTTS
 import requests
 import xml.sax.saxutils as sx
+import time
 
 RSS_URLS = [
     "https://www.francetvinfo.fr/titres.rss",
@@ -58,11 +59,19 @@ Brèves :
 """
 
 def call_openai_chat(prompt: str) -> str:
+    """
+    Appel HTTP à l'API OpenAI avec retries si 429/5xx.
+    Nécessite OPENAI_API_KEY dans l'environnement.
+    """
     api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
         raise RuntimeError("OPENAI_API_KEY manquante")
+
     url = "https://api.openai.com/v1/chat/completions"
-    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    }
     payload = {
         "model": "gpt-4o-mini",
         "messages": [
@@ -70,12 +79,40 @@ def call_openai_chat(prompt: str) -> str:
             {"role": "user", "content": prompt},
         ],
         "temperature": 0.4,
-        "max_tokens": 900,
+        "max_tokens": 700  # un peu plus bas pour limiter la charge
     }
-    r = requests.post(url, headers=headers, data=json.dumps(payload), timeout=60)
-    r.raise_for_status()
-    data = r.json()
-    return data["choices"][0]["message"]["content"]
+
+    # Retries exponentiels : 1s, 2s, 4s, 8s, 16s
+    backoff = 1
+    last_err = None
+    for attempt in range(5):
+        try:
+            r = requests.post(url, headers=headers, data=json.dumps(payload), timeout=60)
+            if r.status_code == 429:
+                # respecte "Retry-After" si présent
+                retry_after = r.headers.get("Retry-After")
+                wait = int(retry_after) if retry_after and retry_after.isdigit() else backoff
+                print(f"[WARN] 429 rate limit — attente {wait}s puis retry ({attempt+1}/5)")
+                time.sleep(wait)
+                backoff *= 2
+                continue
+            r.raise_for_status()
+            data = r.json()
+            return data["choices"][0]["message"]["content"]
+        except requests.RequestException as e:
+            last_err = e
+            # Pour erreurs réseau/5xx, on retente aussi
+            status = getattr(e.response, "status_code", None)
+            if status and 500 <= status < 600:
+                print(f"[WARN] {status} serveur — attente {backoff}s puis retry ({attempt+1}/5)")
+                time.sleep(backoff)
+                backoff *= 2
+                continue
+            # autres erreurs : on casse
+            break
+    # Après 5 essais, on remonte l’erreur → le script passera en fallback titres
+    raise RuntimeError(f"Echec appel OpenAI après retries: {last_err}")
+
 
 def clamp_length(text: str) -> str:
     words = text.split()
