@@ -1,8 +1,8 @@
-name: Générer flash quotidien
+name: generate-flash
 
 on:
   schedule:
-    - cron: '0 5 * * *'   # 05:00 UTC = 07:00 Paris
+    - cron: '13 5 * * *'   # 05:13 UTC ≈ 07:13 Paris
   workflow_dispatch:
 
 permissions:
@@ -23,9 +23,11 @@ jobs:
         run: mkdir -p sorties
 
       - name: Install deps
-        run: pip install -r requirements.txt
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-       - name: Run script (try 1)
+      - name: Run script (try 1)
         id: run1
         continue-on-error: true
         env:
