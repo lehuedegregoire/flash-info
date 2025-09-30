@@ -114,15 +114,55 @@ def clamp_length(text: str) -> str:
     return text
 
 def fallback_script(date_str, items):
-    lines = [f"Bonjour, voici l’essentiel de l’actualité du {date_str}."]
+    lines = [f"Bonjour Grégoire, voici l’essentiel de l’actualité du {date_str}."]
     for t, _ in items[:6]:
         lines.append(f"• {t}.")
     lines.append("Bonne journée.")
     return "\n".join(lines)
 
+import requests
+
+OPENAI_TTS_MODEL = os.environ.get("OPENAI_TTS_MODEL", "tts-1")
+OPENAI_TTS_VOICE = os.environ.get("OPENAI_TTS_VOICE", "alloy")  # ex: alloy, verse, aria...
+
+def script_to_mp3_openai(script_text: str, mp3_path: str):
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key:
+        raise RuntimeError("OPENAI_API_KEY manquante pour TTS")
+
+    url = "https://api.openai.com/v1/audio/speech"
+    payload = {
+        "model": OPENAI_TTS_MODEL,
+        "voice": OPENAI_TTS_VOICE,
+        "input": script_text,
+        "format": "mp3"
+    }
+    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+
+    # petit retry simple
+    for i, wait in enumerate([0, 3, 6, 12], start=1):
+        try:
+            r = requests.post(url, headers=headers, json=payload, timeout=90)
+            if r.status_code == 429 and i < 4:
+                time.sleep(wait or 1); continue
+            r.raise_for_status()
+            with open(mp3_path, "wb") as f:
+                f.write(r.content)
+            return
+        except requests.RequestException as e:
+            if i >= 4:
+                raise
+            time.sleep(wait or 1)
+
 def script_to_mp3(script_text: str, mp3_path: str):
-    tts = gTTS(text=script_text, lang=VOICE_LANG, slow=False)
-    tts.save(mp3_path)
+    """Essaie OpenAI TTS, sinon bascule sur gTTS si dispo."""
+    try:
+        script_to_mp3_openai(script_text, mp3_path)
+    except Exception as e:
+        print(f"[WARN] OpenAI TTS indisponible ({e}). Fallback gTTS.")
+        from gtts import gTTS
+        tts = gTTS(text=script_text, lang=VOICE_LANG, slow=False)
+        tts.save(mp3_path)
 
 def update_podcast_feed(mp3_path: str, title: str, site_base_url: str, feed_path: str):
     os.makedirs(os.path.dirname(feed_path), exist_ok=True)
