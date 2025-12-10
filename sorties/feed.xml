@@ -6,6 +6,12 @@
     <description>Résumé quotidien ~2 minutes</description>
     <language>fr</language>
     <item>
+      <title>Flash du 10 December 2025</title>
+      <description>Flash du 10 December 2025</description>
+      <pubDate>Wed, 10 Dec 2025 06:36:21 +0100</pubDate>
+      <enclosure url="https://lehuedegregoire.github.io/flash-info/sorties/flash_2025-12-10.mp3" length="0" type="audio/mpeg"/>
+      <guid isPermaLink="false">flash_2025-12-10.mp3</guid>
+    </item><item>
       <title>Flash du 9 December 2025</title>
       <description>Flash du 9 December 2025</description>
       <pubDate>Tue, 09 Dec 2025 06:35:56 +0100</pubDate>
@@ -299,12 +305,6 @@
       <pubDate>Wed, 22 Oct 2025 07:43:10 +0200</pubDate>
       <enclosure url="https://lehuedegregoire.github.io/flash-info/sorties/flash_2025-10-22.mp3" length="0" type="audio/mpeg"/>
       <guid isPermaLink="false">flash_2025-10-22.mp3</guid>
-    </item><item>
-      <title>Flash du 21 October 2025</title>
-      <description>Flash du 21 October 2025</description>
-      <pubDate>Tue, 21 Oct 2025 07:40:22 +0200</pubDate>
-      <enclosure url="https://lehuedegregoire.github.io/flash-info/sorties/flash_2025-10-21.mp3" length="0" type="audio/mpeg"/>
-      <guid isPermaLink="false">flash_2025-10-21.mp3</guid>
     </item>
   </channel>
 </rss>
