@@ -6,6 +6,12 @@
     <description>Résumé quotidien ~2 minutes</description>
     <language>fr</language>
     <item>
+      <title>Flash du 19 July 2026</title>
+      <description>Flash du 19 July 2026</description>
+      <pubDate>Sun, 19 Jul 2026 09:40:22 +0200</pubDate>
+      <enclosure url="https://lehuedegregoire.github.io/flash-info/sorties/flash_2026-07-19.mp3" length="0" type="audio/mpeg"/>
+      <guid isPermaLink="false">flash_2026-07-19.mp3</guid>
+    </item><item>
       <title>Flash du 18 July 2026</title>
       <description>Flash du 18 July 2026</description>
       <pubDate>Sat, 18 Jul 2026 09:12:22 +0200</pubDate>
@@ -299,12 +305,6 @@
       <pubDate>Sun, 31 May 2026 10:22:27 +0200</pubDate>
       <enclosure url="https://lehuedegregoire.github.io/flash-info/sorties/flash_2026-05-31.mp3" length="0" type="audio/mpeg"/>
       <guid isPermaLink="false">flash_2026-05-31.mp3</guid>
-    </item><item>
-      <title>Flash du 30 May 2026</title>
-      <description>Flash du 30 May 2026</description>
-      <pubDate>Sat, 30 May 2026 09:51:11 +0200</pubDate>
-      <enclosure url="https://lehuedegregoire.github.io/flash-info/sorties/flash_2026-05-30.mp3" length="0" type="audio/mpeg"/>
-      <guid isPermaLink="false">flash_2026-05-30.mp3</guid>
     </item>
   </channel>
 </rss>
